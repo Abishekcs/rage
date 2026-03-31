@@ -44,8 +44,24 @@ class Rage::Deferred::Backends::Disk
       @recovered_storages = storage_files[1..] if storage_files.length > 1
     end
 
-    # create seed value for the task IDs
-    task_id_seed = Time.now.to_i # TODO: ensure timestamps in the file are not higher
+    # include recovered storages from crashed/previous workers
+    all_storages = [@storage, *@recovered_storages].compact
+
+    # find the highest task timestamp across all storage files
+    max_wal_timestamp = all_storages.map do |storage|
+      max_ts = 0
+      storage.tap(&:rewind).each_line(chomp: true) do |line|
+        next unless line[9...12] == "add"
+        ts = line[13..].split("-").first.to_i
+        max_ts = ts if ts > max_ts
+      end
+      max_ts
+    end.max.to_i
+
+    # apply Lamport IR2(b) From Time, Clocks and the Ordering of Events in a
+    # Distributed System to guard against clock skew
+    task_id_seed = [Time.now.to_i, max_wal_timestamp].max + 1
+
     @task_id_base, @task_id_i = "#{task_id_seed}-#{Process.pid}", 0
     Iodine.run_every(1_000) do
       task_id_seed += 1
@@ -117,7 +133,7 @@ class Rage::Deferred::Backends::Disk
       # `@recovered_storages` will only be present if the server has previously crashed and left
       # some storage files behind, or if the new cluster is started with fewer workers than before;
       # TLDR: this code is expected to execute very rarely
-      @recovered_storages.each { |storage| recover_tasks(storage) }
+      @recovered_storages.each { |storage| recover_tasks(storage.tap(&:rewind)) }
     end
 
     tasks = {}
