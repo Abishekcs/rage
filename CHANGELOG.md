@@ -4,6 +4,7 @@
 
 - Implement `FiberScheduler#fiber_interrupt` (#283).
 - Add Blueprinter parser scaffold and class detection (#287)
+- [OpenAPI] Added static parsing of basic Blueprinter fields (`identifier`, `field`, `fields`) for OpenAPI schema generation. (#289)
 
 ## [1.24.0] - 2026-05-12
 
