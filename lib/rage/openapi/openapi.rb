@@ -128,6 +128,48 @@ module Rage::OpenAPI
   end
 
   # @private
+  def self.__parse_serializer_options(str)
+    is_collection, inner = __try_parse_collection(str)
+
+    if is_collection
+      clean_inner, options = __parse_serializer_options(inner)
+      if options.any?
+        ["Array<#{clean_inner}>", options]
+      else
+        [str, {}]
+      end
+    elsif str =~ /^([\w:]+)\(([^)]+)\)$/
+      [$1, __parse_keywords($2)]
+    else
+      [str, {}]
+    end
+  end
+
+  # @private
+  def self.__parse_keywords(str)
+    return {} if str.nil? || str.empty?
+
+    str.split(",").each_with_object({}) do |part, hash|
+      key, value = part.split(":", 2).map(&:strip)
+      next unless key
+
+      if value.nil?
+        hash[key.to_sym] = nil
+      elsif value.start_with?(":")
+        hash[key.to_sym] = value[1..].to_sym
+      elsif value.start_with?('"') && value.end_with?('"')
+        hash[key.to_sym] = value[1..-2]
+      elsif value == "true"
+        hash[key.to_sym] = true
+      elsif value == "false"
+        hash[key.to_sym] = false
+      else
+        hash[key.to_sym] = value
+      end
+    end
+  end
+
+  # @private
   def self.__module_parent(klass)
     klass.name =~ /::[^:]+\z/ ? Object.const_get($`) : Object
   rescue NameError

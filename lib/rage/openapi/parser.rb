@@ -210,10 +210,13 @@ class Rage::OpenAPI::Parser
     elsif response_data.nil?
       node.responses[status] = nil
     else
+      response_data, serializer_options = Rage::OpenAPI.__parse_serializer_options(response_data)
+
       parsed = Rage::OpenAPI::Parsers::Response.parse(
         response_data,
         namespace: Rage::OpenAPI.__module_parent(node.controller),
-        root: @root
+        root: @root,
+        serializer_options: serializer_options
       )
 
       if parsed

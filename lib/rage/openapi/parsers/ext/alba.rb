@@ -16,7 +16,7 @@ class Rage::OpenAPI::Parsers::Ext::Alba
     false
   end
 
-  def parse(klass_str)
+  def parse(klass_str, serializer_options: {})
     _, raw_klass_str = Rage::OpenAPI.__try_parse_collection(klass_str)
     visitor = __parse(klass_str)
 

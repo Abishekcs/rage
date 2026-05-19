@@ -13,7 +13,7 @@ class Rage::OpenAPI::Parsers::YAML
     !!object && object.is_a?(Enumerable)
   end
 
-  def parse(yaml)
+  def parse(yaml, **)
     __parse(process_yaml(yaml))
   end
 

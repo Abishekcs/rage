@@ -8,7 +8,7 @@ class Rage::OpenAPI::Parsers::SharedReference
     str.start_with?("#/components")
   end
 
-  def parse(component_path)
+  def parse(component_path, **)
     { "$ref" => component_path } if valid_components_ref?(component_path)
   end
 

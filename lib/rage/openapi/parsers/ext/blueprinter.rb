@@ -13,7 +13,7 @@ class Rage::OpenAPI::Parsers::Ext::Blueprinter
     false
   end
 
-  def parse(klass_str)
+  def parse(klass_str, serializer_options: {})
     # for now just return empty hash
     # this is where visitor will plug in later
     { "type" => "object" }

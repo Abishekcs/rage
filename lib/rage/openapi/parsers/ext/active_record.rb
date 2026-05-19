@@ -14,7 +14,7 @@ class Rage::OpenAPI::Parsers::Ext::ActiveRecord
     false
   end
 
-  def parse(klass_str)
+  def parse(klass_str, **)
     is_collection, klass_str = Rage::OpenAPI.__try_parse_collection(klass_str)
     klass = @namespace.const_get(klass_str)
 
