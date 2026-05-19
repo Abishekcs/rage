@@ -172,7 +172,7 @@ RSpec.describe Rage::OpenAPI do
 
     context "with a nil value" do
       let(:str) { "key:" }
-      it { is_expected.to eq({ key: '' }) }
+      it { is_expected.to eq({ key: "" }) }
     end
 
     context "with multiple options" do
