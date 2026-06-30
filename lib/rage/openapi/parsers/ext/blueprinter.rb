@@ -36,7 +36,7 @@ class Rage::OpenAPI::Parsers::Ext::Blueprinter
   def build_schema(klass, is_collection, serializer_options)
     @parsing_stack.add(klass.name)
 
-    view_name = serializer_options&.key?(:view) ? serializer_options[:view] : :default
+    view_name = serializer_options.key?(:view) ? serializer_options[:view] : :default
     reflections = klass.reflections
     view = reflections[view_name]
     raise InvalidViewError, "invalid view #{view_name}" unless view
