@@ -1484,6 +1484,107 @@ RSpec.describe Rage::OpenAPI::Parsers::Ext::Blueprinter do
         })
       end
     end
+
+    context "with circular association resolved through two different views" do
+      let(:root) { Rage::OpenAPI::Nodes::Root.new }
+      let(:options) { { root: root } }
+      let(:resource) { "UserBlueprint(view: :extended)" }
+
+      let_blueprinter_class("ProjectBlueprint") do
+        <<~'RUBY'
+          fields :name
+          view :normal do
+            association :users, blueprint: UserBlueprint
+          end
+        RUBY
+      end
+
+      let_blueprinter_class("UserBlueprint") do
+        <<~'RUBY'
+          fields :email
+          association :projects, blueprint: ProjectBlueprint, view: :normal
+          view :extended do
+            association :all_projects, blueprint: ProjectBlueprint, view: :normal
+          end
+        RUBY
+      end
+
+      it "does not loop infinitely and falls back to $ref for circular reference" do
+        expect { subject }.not_to raise_error
+      end
+
+      it "registers the circular blueprint under a view-specific key, not just the class name" do
+        subject
+        expect(root.schema_registry.key?(["UserBlueprint", { view: :default }])).to be true
+      end
+
+      it "resolves to the correct nested schema for the circularly-referenced view" do
+        is_expected.to eq({
+          "type" => "object",
+          "properties" => {
+            "email" => { "type" => "string" },
+            "projects" => {
+              "type" => "array",
+              "items" => {
+                "type" => "object",
+                "properties" => {
+                  "name" => { "type" => "string" },
+                  "users" => {
+                    "type" => "array",
+                    "items" => { "$ref" => "#/components/schemas/UserBlueprint" }
+                  }
+                }
+              }
+            },
+            "all_projects" => {
+              "type" => "array",
+              "items" => {
+                "type" => "object",
+                "properties" => {
+                  "name" => { "type" => "string" },
+                  "users" => {
+                    "type" => "array",
+                    "items" => { "$ref" => "#/components/schemas/UserBlueprint" }
+                  }
+                }
+              }
+            }
+          }
+        })
+      end
+    end
+
+    context "with a top-level class that closes its own circular reference" do
+      let(:root) { Rage::OpenAPI::Nodes::Root.new }
+      let(:options) { { root: root } }
+      let(:resource) { "UserBlueprint" }
+
+      let_blueprinter_class("ProjectBlueprint") do
+        <<~'RUBY'
+          fields :name
+          association :users, blueprint: UserBlueprint
+        RUBY
+      end
+
+      let_blueprinter_class("UserBlueprint") do
+        <<~'RUBY'
+          fields :email
+          association :projects, blueprint: ProjectBlueprint
+        RUBY
+      end
+
+      it "does not loop infinitely and falls back to $ref for circular reference" do
+        expect { subject }.not_to raise_error
+      end
+
+      it "backfills the registry placeholder with the fully built schema" do
+        subject
+
+        registered = root.schema_registry[["UserBlueprint", { view: :default }]]
+        expect(registered).not_to be_nil
+        expect(registered).to eq(subject)
+      end
+    end
   end
 
   describe "collection" do
