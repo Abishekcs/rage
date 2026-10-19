@@ -5,6 +5,9 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in rage.gemspec
 gemspec
 
+# dev: use the local iodine fork with ELU support
+gem "rage-iodine", path: "/home/ad/Desktop/iodine"
+
 gem "rake", "~> 13.0"
 
 gem "rspec", "~> 3.0"
